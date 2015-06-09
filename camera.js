@@ -2,10 +2,10 @@ var sys = require('sys'),
     request = require('request'),
     fs = require('fs'),
     exec = require('child_process').exec,
-    api = 'http://link.to.api/',
+    api = 'http://cam.michelem.org',
     auth = {
-      username: 'demo',
-      password: 'demo'
+      username: 'upload',
+      password: 'upload'
     },
     takePicture,
     uploadPicture,
@@ -29,11 +29,12 @@ uploadPicture = function (fileName, callback) {
     }
 
     fs.createReadStream(fileName).pipe(request.post(api + '/upload/', function (error, response, body) {
-      if (response.statusCode === 200) {
+      if (response && response.statusCode === 200) {
         fs.unlink(fileName, function (err) {});
       }
 
-      takePicture();
+      setTimeout(function () { takePicture() }, 60000);
+
     }).auth(auth.username, auth.password, true));
   });
 };
@@ -45,11 +46,13 @@ uploadPicture = function (fileName, callback) {
  */
 takePicture = function (callback) {
   var now = new Date(),
-      fileName = '/home/pi/images/' + now.getTime() + '.jpg';
-
-  exec('raspistill -o ' + fileName + ' -w 1920 -h 1080 -q 15', function (err, stdin, stdout) {
+      fileName = '/home/michele/camera/' + now.getTime() + '.jpg';
+  exec('raspistill -o ' + fileName + ' -w 1280 -h 1024 -q 35', function (err, stdin, stdout) {
+    console.log('Taking picture');
     if (!err) {
       uploadPicture(fileName);
+    } else {
+	console.log(err);
     }
   });
 };
@@ -60,7 +63,7 @@ takePicture = function (callback) {
  * @return void
  */
 syncPictures = function () {
-  fs.readdir('/home/pi/images/', function (err, files) {
+  fs.readdir('/home/michele/camera/', function (err, files) {
     if (err) {
       return false;
     }
@@ -68,7 +71,7 @@ syncPictures = function () {
     if (files.length > 0) {
       var queueUpload = function (i) {
         setTimeout(function () {
-          uploadPicture('/home/pi/images/' + files[i]);
+          uploadPicture('/home/michele/camera/' + files[i]);
         }, i * 200);
       };
 
